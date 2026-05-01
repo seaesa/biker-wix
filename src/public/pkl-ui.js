@@ -21,7 +21,11 @@ function safeOnClick(selector, handler) {
   if (!hasElement(selector)) {
     return;
   }
-  $w(selector).onClick(handler);
+  const element = $w(selector);
+  if (typeof element.onClick !== "function") {
+    return;
+  }
+  element.onClick(handler);
 }
 
 function safeText(selector, value) {
@@ -49,10 +53,15 @@ function safeShow(selector, effect = "fade", options = { duration: 180 }) {
   if (!hasElement(selector)) {
     return;
   }
+  const element = $w(selector);
+  if (typeof element.show !== "function") {
+    console.warn(`[PKL] ${selector} does not support show().`);
+    return;
+  }
   try {
-    $w(selector).show(effect, options);
+    element.show(effect, options);
   } catch (_) {
-    $w(selector).show();
+    element.show();
   }
 }
 
@@ -123,6 +132,7 @@ export function bindCharacterScreen() {
 export function bindGarageScreen() {
   const profile = getProfile();
   let selectedBikeId = profile.bike.id;
+  const repeater = hasElement(PKL_IDS.garage.repeater) ? $w(PKL_IDS.garage.repeater) : null;
 
   const renderBikePreview = (bike) => {
     safeText(PKL_IDS.garage.previewName, bike.name);
@@ -131,13 +141,13 @@ export function bindGarageScreen() {
     safeImage(PKL_IDS.garage.previewImage, bike.image);
   };
 
-  if (hasElement(PKL_IDS.garage.repeater)) {
-    $w(PKL_IDS.garage.repeater).data = GARAGE_BIKES.map((bike) => ({
+  if (repeater && typeof repeater.onItemReady === "function") {
+    repeater.data = GARAGE_BIKES.map((bike) => ({
       ...bike,
       _id: bike.id,
     }));
 
-    $w(PKL_IDS.garage.repeater).onItemReady(($item, itemData) => {
+    repeater.onItemReady(($item, itemData) => {
       if (itemHas($item, "#txtBikeCardName")) {
         $item("#txtBikeCardName").text = itemData.name;
       }
@@ -150,10 +160,14 @@ export function bindGarageScreen() {
         $item("#btnBikeCardSelect").onClick(() => {
           selectedBikeId = itemData.id;
           renderBikePreview(itemData);
-          $w(PKL_IDS.garage.repeater).data = [...$w(PKL_IDS.garage.repeater).data];
+          repeater.data = [...repeater.data];
         });
       }
     });
+  } else if (repeater) {
+    console.warn(
+      `[PKL] ${PKL_IDS.garage.repeater} is not a Repeater. Check the element ID in Wix Editor.`
+    );
   }
 
   const initialBike = GARAGE_BIKES.find((bike) => bike.id === selectedBikeId) || GARAGE_BIKES[0];
