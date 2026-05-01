@@ -1,0 +1,57 @@
+.pkl-bg {
+  background: radial-gradient(circle at top, #12344a 0%, #07131d 48%, #03080d 100%);
+}
+
+.pkl-panel {
+  background: rgba(10, 34, 51, 0.82);
+  border: 1px solid rgba(0, 169, 255, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+}
+
+.pkl-title {
+  color: #eef8ff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(0, 169, 255, 0.65);
+}
+
+.pkl-subtitle {
+  color: #9acbe5;
+}
+
+.pkl-button {
+  background: linear-gradient(120deg, #00a9ff 0%, #0078b5 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #f1fbff;
+  font-weight: 700;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.pkl-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 169, 255, 0.35);
+}
+
+.pkl-button--accent {
+  background: linear-gradient(120deg, #ff9f1c 0%, #cc7b00 100%);
+}
+
+.pkl-chip {
+  background: rgba(0, 169, 255, 0.14);
+  border: 1px solid rgba(0, 169, 255, 0.4);
+  border-radius: 999px;
+  color: #daf3ff;
+  padding: 4px 12px;
+}
+
+.pkl-map-hotspot {
+  cursor: pointer;
+  transition: transform 100ms ease, filter 100ms ease;
+}
+
+.pkl-map-hotspot:hover {
+  transform: scale(1.03);
+  filter: brightness(1.12);
+}
