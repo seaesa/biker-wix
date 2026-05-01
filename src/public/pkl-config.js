@@ -33,6 +33,8 @@ export const PKL_IDS = {
     shoesLeft: "#btnShoesPrev",
     shoesRight: "#btnShoesNext",
     previewImage: "#imgRiderPreview",
+    previewTitle: "#txtRiderTitle",
+    previewStats: "#txtRiderStats",
     saveBtn: "#btnSaveCharacter",
   },
   garage: {
@@ -40,6 +42,7 @@ export const PKL_IDS = {
     previewImage: "#imgBikePreview",
     previewName: "#txtBikeName",
     previewMeta: "#txtBikeMeta",
+    selectedChip: "#txtSelectedBikeChip",
     selectBtn: "#btnSelectBike",
   },
   map: {
@@ -49,6 +52,7 @@ export const PKL_IDS = {
     detailBox: "#boxZoneDetail",
     detailTitle: "#txtZoneTitle",
     detailBody: "#txtZoneBody",
+    detailMeta: "#txtZoneMeta",
     startBtn: "#btnStartFromZone",
   },
 };
@@ -87,23 +91,61 @@ export const DEFAULT_PROFILE = {
 };
 
 export const GARAGE_BIKES = [
-  { id: "street-150", name: "Street 150", handling: "balanced", tier: "basic" },
-  { id: "neo-300", name: "Neo 300", handling: "corner", tier: "basic" },
-  { id: "track-450", name: "Track 450", handling: "accel", tier: "advanced" },
-  { id: "stunt-500", name: "Stunt 500", handling: "trick", tier: "advanced" },
+  {
+    id: "street-150",
+    name: "Street 150",
+    handling: "balanced",
+    tier: "basic",
+    description: "Easy control and stable corner entry for warm-up sessions.",
+    image: "",
+  },
+  {
+    id: "neo-300",
+    name: "Neo 300",
+    handling: "corner",
+    tier: "basic",
+    description: "Sharper turn response with medium acceleration curve.",
+    image: "",
+  },
+  {
+    id: "track-450",
+    name: "Track 450",
+    handling: "accel",
+    tier: "advanced",
+    description: "Aggressive throttle profile built for fast transitions.",
+    image: "",
+  },
+  {
+    id: "stunt-500",
+    name: "Stunt 500",
+    handling: "trick",
+    tier: "advanced",
+    description: "High stunt potential with sensitive body-balance behavior.",
+    image: "",
+  },
 ];
 
 export const MAP_ZONES = {
   A: {
     title: "A - Footrest Line",
     body: "Train body position and smooth corner entry. Good place for learning knee-down timing.",
+    meta: "Difficulty: Easy • Focus: Line and posture",
   },
   B: {
     title: "B - Escape Area",
     body: "Safe recovery area. Practice emergency brake and lane correction.",
+    meta: "Difficulty: Medium • Focus: Braking control",
   },
   C: {
     title: "C - Tire / Stunt Zone",
     body: "Skill zone for controlled wheelie, drift entry, and stoppie feedback loops.",
+    meta: "Difficulty: Hard • Focus: Stunt chain",
   },
+};
+
+export const GEAR_LIMITS = {
+  helmet: 5,
+  jacket: 5,
+  gloves: 5,
+  shoes: 5,
 };

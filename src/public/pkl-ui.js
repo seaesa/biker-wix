@@ -5,8 +5,9 @@ import {
   PKL_ROUTES,
   GARAGE_BIKES,
   MAP_ZONES,
-} from "public/pkl-config";
-import { getProfile, patchProfile } from "public/pkl-state";
+  GEAR_LIMITS,
+} from "./pkl-config";
+import { getProfile, patchProfile } from "./pkl-state";
 
 function hasElement(selector) {
   try {
@@ -30,6 +31,31 @@ function safeText(selector, value) {
   $w(selector).text = value;
 }
 
+function safeButtonLabel(selector, value) {
+  if (!hasElement(selector)) {
+    return;
+  }
+  $w(selector).label = value;
+}
+
+function safeImage(selector, src) {
+  if (!src || !hasElement(selector)) {
+    return;
+  }
+  $w(selector).src = src;
+}
+
+function safeShow(selector, effect = "fade", options = { duration: 180 }) {
+  if (!hasElement(selector)) {
+    return;
+  }
+  try {
+    $w(selector).show(effect, options);
+  } catch (_) {
+    $w(selector).show();
+  }
+}
+
 function itemHas($item, selector) {
   try {
     return Boolean($item(selector));
@@ -40,6 +66,10 @@ function itemHas($item, selector) {
 
 function navigate(path) {
   wixLocation.to(path);
+}
+
+function formatGearSummary(gear) {
+  return `Helmet ${gear.helmet} • Jacket ${gear.jacket} • Gloves ${gear.gloves} • Shoes ${gear.shoes}`;
 }
 
 export function bindGlobalNavigation() {
@@ -56,9 +86,15 @@ export function bindHomeScreen() {
 }
 
 export function bindCharacterScreen() {
+  const renderCharacterPreview = (profile) => {
+    const { gender, gear } = profile.character;
+    safeText(PKL_IDS.character.previewTitle, `Rider ${gender === "male" ? "Male" : "Female"}`);
+    safeText(PKL_IDS.character.previewStats, formatGearSummary(gear));
+  };
+
   const updateGender = (gender) => {
-    patchProfile({ character: { gender } });
-    safeText(PKL_IDS.home.subtitle, `Rider: ${gender}`);
+    const next = patchProfile({ character: { gender } });
+    renderCharacterPreview(next);
   };
   safeOnClick(PKL_IDS.character.maleCard, () => updateGender("male"));
   safeOnClick(PKL_IDS.character.femaleCard, () => updateGender("female"));
@@ -66,8 +102,9 @@ export function bindCharacterScreen() {
   const bumpGear = (slot, dir) => {
     const profile = getProfile();
     const current = profile.character.gear[slot] || 0;
-    const next = Math.max(0, Math.min(5, current + dir));
-    patchProfile({ character: { gear: { [slot]: next } } });
+    const next = Math.max(0, Math.min(GEAR_LIMITS[slot], current + dir));
+    const updated = patchProfile({ character: { gear: { [slot]: next } } });
+    renderCharacterPreview(updated);
   };
 
   safeOnClick(PKL_IDS.character.helmetLeft, () => bumpGear("helmet", -1));
@@ -79,12 +116,20 @@ export function bindCharacterScreen() {
   safeOnClick(PKL_IDS.character.shoesLeft, () => bumpGear("shoes", -1));
   safeOnClick(PKL_IDS.character.shoesRight, () => bumpGear("shoes", 1));
 
+  renderCharacterPreview(getProfile());
   safeOnClick(PKL_IDS.character.saveBtn, () => navigate(PKL_ROUTES.garage));
 }
 
 export function bindGarageScreen() {
   const profile = getProfile();
   let selectedBikeId = profile.bike.id;
+
+  const renderBikePreview = (bike) => {
+    safeText(PKL_IDS.garage.previewName, bike.name);
+    safeText(PKL_IDS.garage.previewMeta, `${bike.handling} • ${bike.tier} • ${bike.description}`);
+    safeText(PKL_IDS.garage.selectedChip, `Selected: ${bike.name}`);
+    safeImage(PKL_IDS.garage.previewImage, bike.image);
+  };
 
   if (hasElement(PKL_IDS.garage.repeater)) {
     $w(PKL_IDS.garage.repeater).data = GARAGE_BIKES.map((bike) => ({
@@ -100,14 +145,19 @@ export function bindGarageScreen() {
         $item("#txtBikeCardMeta").text = `${itemData.handling} • ${itemData.tier}`;
       }
       if (itemHas($item, "#btnBikeCardSelect")) {
+        $item("#btnBikeCardSelect").label =
+          selectedBikeId === itemData.id ? "Selected" : "Choose";
         $item("#btnBikeCardSelect").onClick(() => {
           selectedBikeId = itemData.id;
-          safeText(PKL_IDS.garage.previewName, itemData.name);
-          safeText(PKL_IDS.garage.previewMeta, `${itemData.handling} • ${itemData.tier}`);
+          renderBikePreview(itemData);
+          $w(PKL_IDS.garage.repeater).data = [...$w(PKL_IDS.garage.repeater).data];
         });
       }
     });
   }
+
+  const initialBike = GARAGE_BIKES.find((bike) => bike.id === selectedBikeId) || GARAGE_BIKES[0];
+  renderBikePreview(initialBike);
 
   safeOnClick(PKL_IDS.garage.selectBtn, () => {
     const selected = GARAGE_BIKES.find((bike) => bike.id === selectedBikeId) || GARAGE_BIKES[0];
@@ -117,16 +167,30 @@ export function bindGarageScreen() {
 }
 
 export function bindMapScreen() {
-  const chooseZone = (zone) => {
-    const zoneData = MAP_ZONES[zone];
-    patchProfile({ map: { selectedZone: zone } });
+  const renderZone = (zone, zoneData) => {
     safeText(PKL_IDS.map.detailTitle, zoneData.title);
     safeText(PKL_IDS.map.detailBody, zoneData.body);
+    safeText(PKL_IDS.map.detailMeta, zoneData.meta || "");
+    safeButtonLabel(PKL_IDS.map.startBtn, `Start Run (${zone})`);
+    safeShow(PKL_IDS.map.detailBox);
+  };
+
+  const chooseZone = (zone) => {
+    const zoneData = MAP_ZONES[zone];
+    const profile = getProfile();
+    const unlocked = new Set(profile.map.unlockedZones || ["A"]);
+    unlocked.add(zone);
+    patchProfile({ map: { selectedZone: zone, unlockedZones: [...unlocked] } });
+    renderZone(zone, zoneData);
   };
 
   safeOnClick(PKL_IDS.map.hotspotA, () => chooseZone("A"));
   safeOnClick(PKL_IDS.map.hotspotB, () => chooseZone("B"));
   safeOnClick(PKL_IDS.map.hotspotC, () => chooseZone("C"));
+
+  const profile = getProfile();
+  const initialZone = profile.map.selectedZone || "A";
+  renderZone(initialZone, MAP_ZONES[initialZone]);
 
   safeOnClick(PKL_IDS.map.startBtn, () => navigate(PKL_ROUTES.play));
 }

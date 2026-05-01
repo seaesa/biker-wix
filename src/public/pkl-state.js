@@ -1,5 +1,5 @@
 import { local, memory } from "wix-storage";
-import { DEFAULT_PROFILE } from "public/pkl-config";
+import { DEFAULT_PROFILE } from "./pkl-config";
 
 const PROFILE_KEY = "pkl.profile.v1";
 
