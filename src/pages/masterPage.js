@@ -3,6 +3,7 @@ import {
   bindCharacterScreen,
   bindGarageScreen,
   bindMapScreen,
+  bindPlayScreen,
 } from "public/pkl-ui";
 
 $w.onReady(function () {
@@ -10,4 +11,5 @@ $w.onReady(function () {
   bindCharacterScreen();
   bindGarageScreen();
   bindMapScreen();
+  bindPlayScreen();
 });

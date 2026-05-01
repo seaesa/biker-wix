@@ -8,6 +8,7 @@ import {
   GEAR_LIMITS,
 } from "./pkl-config";
 import { getProfile, patchProfile } from "./pkl-state";
+import { createGameplayController } from "./pkl-gameplay";
 
 function hasElement(selector) {
   try {
@@ -207,6 +208,127 @@ export function bindMapScreen() {
   renderZone(initialZone, MAP_ZONES[initialZone]);
 
   safeOnClick(PKL_IDS.map.startBtn, () => navigate(PKL_ROUTES.play));
+}
+
+function bindHold(selector, onChange) {
+  if (!hasElement(selector)) {
+    return;
+  }
+  const element = $w(selector);
+  const pressed = () => onChange(true);
+  const released = () => onChange(false);
+
+  if (typeof element.onMouseDown === "function") {
+    element.onMouseDown(pressed);
+  }
+  if (typeof element.onMouseUp === "function") {
+    element.onMouseUp(released);
+  }
+  if (typeof element.onMouseOut === "function") {
+    element.onMouseOut(released);
+  }
+  if (typeof element.onTouchStart === "function") {
+    element.onTouchStart(pressed);
+  }
+  if (typeof element.onTouchEnd === "function") {
+    element.onTouchEnd(released);
+  }
+}
+
+function bindSteerPad(selector, onSteer) {
+  if (!hasElement(selector)) {
+    return;
+  }
+  const element = $w(selector);
+  const toSteer = (event) => {
+    const relX = event?.offsetX ?? event?.x ?? 0;
+    const width = element?.renderedWidth || 240;
+    const normalized = ((relX / width) * 2 - 1) || 0;
+    onSteer(Math.max(-1, Math.min(1, normalized)));
+  };
+
+  if (typeof element.onMouseMove === "function") {
+    element.onMouseMove(toSteer);
+  }
+  if (typeof element.onMouseOut === "function") {
+    element.onMouseOut(() => onSteer(0));
+  }
+  if (typeof element.onTouchMove === "function") {
+    element.onTouchMove(toSteer);
+  }
+  if (typeof element.onTouchEnd === "function") {
+    element.onTouchEnd(() => onSteer(0));
+  }
+}
+
+export function bindPlayScreen() {
+  const hasPlaySurface =
+    hasElement(PKL_IDS.play.steerPad) ||
+    hasElement(PKL_IDS.play.throttleBtn) ||
+    hasElement(PKL_IDS.play.htmlComponent);
+  if (!hasPlaySurface) {
+    return;
+  }
+
+  const profile = getProfile();
+  const gameplay = createGameplayController({
+    $w,
+    ids: PKL_IDS.play,
+    profile,
+    onBackToMap: () => navigate(PKL_ROUTES.map),
+    onStatus: (status) => {
+      const html = hasElement(PKL_IDS.play.htmlComponent) ? $w(PKL_IDS.play.htmlComponent) : null;
+      if (html && typeof html.postMessage === "function") {
+        html.postMessage({ type: "status", payload: { status } });
+      }
+    },
+    onTelemetry: (telemetry) => {
+      const html = hasElement(PKL_IDS.play.htmlComponent) ? $w(PKL_IDS.play.htmlComponent) : null;
+      if (html && typeof html.postMessage === "function") {
+        html.postMessage({ type: "telemetry", payload: telemetry });
+      }
+    },
+  });
+
+  bindHold(PKL_IDS.play.throttleBtn, (pressed) => gameplay.setControl("throttle", pressed));
+  bindHold(PKL_IDS.play.brakeBtn, (pressed) => gameplay.setControl("brake", pressed));
+  bindHold(PKL_IDS.play.clutchBtn, (pressed) => gameplay.setControl("clutch", pressed));
+  bindSteerPad(PKL_IDS.play.steerPad, (steer) => gameplay.setSteer(steer));
+
+  safeOnClick(PKL_IDS.play.wheelieBtn, () => gameplay.trick("wheelie"));
+  safeOnClick(PKL_IDS.play.driftBtn, () => gameplay.trick("drift"));
+  safeOnClick(PKL_IDS.play.stoppieBtn, () => gameplay.trick("stoppie"));
+  safeOnClick(PKL_IDS.play.kneeDownBtn, () => gameplay.trick("kneeDown"));
+  safeOnClick(PKL_IDS.play.retryBtn, () => gameplay.restart());
+  safeOnClick(PKL_IDS.play.backToMapBtn, () => gameplay.backToMap());
+
+  if (hasElement(PKL_IDS.play.htmlComponent)) {
+    const html = $w(PKL_IDS.play.htmlComponent);
+    if (typeof html.onMessage === "function") {
+      html.onMessage((event) => {
+        const type = event?.data?.type;
+        const payload = event?.data?.payload || {};
+        if (type === "ready" && typeof html.postMessage === "function") {
+          html.postMessage({
+            type: "init",
+            payload: {
+              bike: profile.bike,
+              zone: profile.map?.selectedZone || "A",
+              rider: profile.character,
+            },
+          });
+        }
+        if (type === "steer") {
+          gameplay.setSteer(payload.value || 0);
+        }
+        if (type === "trick") {
+          gameplay.trick(payload.name);
+        }
+      });
+    }
+  }
+
+  gameplay.boot();
 }
 
 export function showSimpleToast(message) {
